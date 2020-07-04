@@ -40,7 +40,7 @@ feat_common_core = [
     "csplit",
     "cut",
     "date",
-    # "df",
+    "df",
     "dircolors",
     "dirname",
     "echo",

@@ -469,7 +469,7 @@ impl FsUsage {
             }
         }
     }
-    #[cfg(not(unix))]
+    #[cfg(windows)]
     fn new(path: &Path) -> FsUsage {
         let mut root_path = [0u16; MAX_PATH];
         let success = unsafe {
@@ -533,6 +533,7 @@ impl FsUsage {
 impl Filesystem {
     // TODO: resolve uuid in `mountinfo.dev_name` if exists
     fn new(mountinfo: MountInfo) -> Option<Filesystem> {
+        #[cfg(any(unix, windows))]
         let _stat_path = if !mountinfo.mount_dir.is_empty() {
             mountinfo.mount_dir.clone()
         } else {
@@ -560,10 +561,14 @@ impl Filesystem {
             }
         }
         #[cfg(windows)]
-        Some(Filesystem {
-            mountinfo,
-            usage: FsUsage::new(Path::new(&_stat_path)),
-        })
+        {
+            Some(Filesystem {
+                mountinfo,
+                usage: FsUsage::new(Path::new(&_stat_path)),
+            })
+        }
+        #[cfg(not(any(unix, windows)))]
+        None
     }
 }
 
@@ -638,6 +643,10 @@ fn read_fs_list() -> Vec<MountInfo> {
             FindVolumeClose(find_handle);
         }
         mounts
+    }
+    #[cfg(not(any(unix, windows)))]
+    {
+        vec![]
     }
 }
 
