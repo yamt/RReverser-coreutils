@@ -99,7 +99,7 @@ fn setup_term() -> termios::Termios {
     term
 }
 
-#[cfg(any(windows, target_os = "fuchsia"))]
+#[cfg(any(windows, target_os = "fuchsia", target_os = "wasi"))]
 #[inline(always)]
 fn setup_term() -> usize {
     0
@@ -124,7 +124,7 @@ fn reset_term(term: &mut termios::Termios) {
     termios::tcsetattr(0, termios::TCSADRAIN, &term).unwrap();
 }
 
-#[cfg(any(windows, target_os = "fuchsia"))]
+#[cfg(any(windows, target_os = "fuchsia", target_os = "wasi"))]
 #[inline(always)]
 fn reset_term(_: &mut usize) {}
 

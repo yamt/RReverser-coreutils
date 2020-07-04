@@ -10,13 +10,18 @@
 // spell-checker:ignore (ToDO) getusername
 
 #[cfg(unix)]
-pub use self::unix::getusername;
+#[path = "unix.rs"]
+mod imp;
 
 #[cfg(windows)]
-pub use self::windows::getusername;
+#[path = "windows.rs"]
+mod imp;
 
-#[cfg(unix)]
-mod unix;
+#[cfg(not(any(unix, windows)))]
+mod imp {
+	pub unsafe fn getusername() -> std::io::Result<String> {
+		Ok("unknown".into())
+	}
+}
 
-#[cfg(windows)]
-mod windows;
+pub use self::imp::getusername;

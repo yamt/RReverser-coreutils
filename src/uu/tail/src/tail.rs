@@ -49,6 +49,7 @@ struct Settings {
     sleep_msec: u32,
     beginning: bool,
     follow: bool,
+    #[cfg(any(unix, windows, target_os = "redox"))]
     pid: platform::Pid,
 }
 
@@ -59,6 +60,7 @@ impl Default for Settings {
             sleep_msec: 1000,
             beginning: false,
             follow: false,
+            #[cfg(any(unix, windows, target_os = "redox"))]
             pid: 0,
         }
     }
@@ -90,12 +92,6 @@ pub fn uumain(args: impl uucore::Args) -> i32 {
                 .long(OPT_LINES)
                 .takes_value(true)
                 .help("Number of lines to print"),
-        )
-        .arg(
-            Arg::with_name(OPT_PID)
-                .long(OPT_PID)
-                .takes_value(true)
-                .help("with -f, terminate after process ID, PID dies"),
         )
         .arg(
             Arg::with_name(OPT_QUIET)
@@ -133,6 +129,14 @@ pub fn uumain(args: impl uucore::Args) -> i32 {
                 .min_values(1),
         );
 
+    #[cfg(any(unix, windows, target_os = "redox"))]
+    let app = app.arg(
+        Arg::with_name(OPT_PID)
+            .long(OPT_PID)
+            .takes_value(true)
+            .help("with -f, terminate after process ID, PID dies"),
+    );
+
     let matches = app.get_matches_from(args);
 
     settings.follow = matches.is_present(OPT_FOLLOW);
@@ -145,17 +149,21 @@ pub fn uumain(args: impl uucore::Args) -> i32 {
         }
     }
 
-    if let Some(pid_str) = matches.value_of(OPT_PID) {
-        if let Ok(pid) = pid_str.parse() {
-            settings.pid = pid;
-            if pid != 0 {
-                if !settings.follow {
-                    show_warning!("PID ignored; --pid=PID is useful only when following");
-                }
+    #[cfg(any(unix, windows, target_os = "redox"))]
+    {
+        if let Some(pid_str) = matches.value_of(OPT_PID) {
+            if let Ok(pid) = pid_str.parse() {
+                settings.pid = pid;
+                if pid != 0 {
+                    if !settings.follow {
+                        show_warning!("PID ignored; --pid=PID is useful only when following");
+                    }
 
-                if !platform::supports_pid_checks(pid) {
-                    show_warning!("--pid=PID is not supported on this system");
-                    settings.pid = 0;
+                        if !platform::supports_pid_checks(pid) {
+                            show_warning!("--pid=PID is not supported on this system");
+                            settings.pid = 0;
+                        }
+                    }
                 }
             }
         }
@@ -349,11 +357,13 @@ fn follow<T: Read>(readers: &mut [BufReader<T>], filenames: &[String], settings:
     assert!(settings.follow);
     let mut last = readers.len() - 1;
     let mut read_some = false;
+
+    #[cfg(any(unix, windows, target_os = "redox"))]
     let mut process = platform::ProcessChecker::new(settings.pid);
 
     loop {
         sleep(Duration::new(0, settings.sleep_msec * 1000));
-
+        #[cfg(any(unix, windows, target_os = "redox"))]
         let pid_is_dead = !read_some && settings.pid != 0 && process.is_dead();
         read_some = false;
 
@@ -376,8 +386,10 @@ fn follow<T: Read>(readers: &mut [BufReader<T>], filenames: &[String], settings:
             }
         }
 
-        if pid_is_dead {
-            break;
+        #[cfg(any(unix, windows, target_os = "redox"))] {
+            if pid_is_dead {
+                break;
+            }
         }
     }
 }

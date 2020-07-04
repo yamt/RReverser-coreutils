@@ -146,7 +146,7 @@ fn mkdir(path: &Path, recursive: bool, mode: u16, verbose: bool) -> i32 {
         }
         0
     }
-    #[cfg(windows)]
+    #[cfg(not(any(unix, target_os = "redox")))]
     #[allow(unused_variables)]
     fn chmod(path: &Path, mode: u16) -> i32 {
         // chmod on Windows only sets the readonly flag, which isn't even honored on directories

@@ -1050,12 +1050,17 @@ fn copy_attribute(source: &Path, dest: &Path, attribute: &Attribute) -> CopyResu
     Ok(())
 }
 
-#[cfg(not(windows))]
+#[cfg(any(unix, target_os = "redox"))]
 fn symlink_file(source: &Path, dest: &Path, context: &str) -> CopyResult<()> {
     match std::os::unix::fs::symlink(source, dest).context(context) {
         Ok(_) => Ok(()),
         Err(_) => Ok(()),
     }
+}
+
+#[cfg(target_os = "wasi")]
+fn symlink_file(source: &Path, dest: &Path, context: &str) -> CopyResult<()> {
+    Ok(std::os::wasi::fs::symlink_path(source, dest).context(context)?)
 }
 
 #[cfg(windows)]

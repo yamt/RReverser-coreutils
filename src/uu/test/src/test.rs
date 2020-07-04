@@ -333,7 +333,7 @@ enum PathCondition {
     Executable,
 }
 
-#[cfg(not(windows))]
+#[cfg(any(unix, target_os = "redox"))]
 fn path(path: &[u8], cond: PathCondition) -> bool {
     use std::ffi::OsStr;
     use std::fs::{self, Metadata};
@@ -402,7 +402,7 @@ fn path(path: &[u8], cond: PathCondition) -> bool {
     }
 }
 
-#[cfg(windows)]
+#[cfg(not(any(unix, target_os = "redox")))]
 fn path(path: &[u8], cond: PathCondition) -> bool {
     use std::fs::metadata;
     let path = from_utf8(path).unwrap();

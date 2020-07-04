@@ -21,7 +21,7 @@ fn create_dir<P: AsRef<Path>>(path: P) -> IOResult<()> {
     DirBuilder::new().mode(0o700).create(path)
 }
 
-#[cfg(windows)]
+#[cfg(not(any(unix, target_os = "redox")))]
 fn create_dir<P: AsRef<Path>>(path: P) -> IOResult<()> {
     ::std::fs::create_dir(path)
 }

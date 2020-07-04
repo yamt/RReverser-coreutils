@@ -214,15 +214,30 @@ fn list(options: getopts::Matches) -> i32 {
     }
 }
 
-#[cfg(any(unix, target_os = "redox"))]
 fn sort_entries(entries: &mut Vec<PathBuf>, options: &getopts::Matches) {
     let mut reverse = options.opt_present("r");
     if options.opt_present("t") {
-        if options.opt_present("c") {
-            entries.sort_by_key(|k| {
-                Reverse(get_metadata(k, options).map(|md| md.ctime()).unwrap_or(0))
-            });
-        } else {
+        let mut sorted = false;
+
+        #[cfg(any(unix, target_os = "redox", target_os = "wasi"))] {
+            if options.opt_present("c") {
+                entries.sort_by_key(|k| {
+                    Reverse(get_metadata(k, options).map(|md| {
+                        #[cfg(any(unix, target_os = "redox"))]
+                        {
+                            md.ctime()
+                        }
+                        #[cfg(target_os = "wasi")]
+                        {
+                            md.ctim()
+                        }
+                    }).unwrap_or(0))
+                });
+                sorted = true;
+            }
+        }
+
+        if !sorted {
             entries.sort_by_key(|k| {
                 // Newest first
                 Reverse(
@@ -254,34 +269,6 @@ fn is_hidden(file_path: &DirEntry) -> std::io::Result<bool> {
 #[cfg(unix)]
 fn is_hidden(file_path: &DirEntry) -> std::io::Result<bool> {
     Ok(file_path.file_name().to_string_lossy().starts_with('.'))
-}
-
-#[cfg(windows)]
-fn sort_entries(entries: &mut Vec<PathBuf>, options: &getopts::Matches) {
-    let mut reverse = options.opt_present("r");
-    if options.opt_present("t") {
-        entries.sort_by_key(|k| {
-            // Newest first
-            Reverse(
-                get_metadata(k, options)
-                    .and_then(|md| md.modified())
-                    .unwrap_or(std::time::UNIX_EPOCH),
-            )
-        });
-    } else if options.opt_present("S") {
-        entries.sort_by_key(|k| {
-            get_metadata(k, options)
-                .map(|md| md.file_size())
-                .unwrap_or(0)
-        });
-        reverse = !reverse;
-    } else if !options.opt_present("U") {
-        entries.sort();
-    }
-
-    if reverse {
-        entries.reverse();
-    }
 }
 
 fn should_display(entry: &DirEntry, options: &getopts::Matches) -> bool {

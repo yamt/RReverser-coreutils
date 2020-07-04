@@ -40,7 +40,7 @@ feat_common_core = [
     "csplit",
     "cut",
     "date",
-    "df",
+    # "df",
     "dircolors",
     "dirname",
     "echo",
@@ -355,3 +355,7 @@ unix_socket = "0.5.0"
 [[bin]]
 name = "coreutils"
 path = "src/bin/coreutils.rs"
+
+[patch.crates-io]
+platform-info = { git = "https://github.com/RReverser/platform-info", branch = "unknown-platform" }
+termsize = { git = "https://github.com/softprops/termsize", rev = "247add722759bd834e2b542885932e42c8cfff76" }
