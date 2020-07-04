@@ -162,7 +162,7 @@ pub fn canonicalize<P: AsRef<Path>>(original: P, can_mode: CanonicalizeMode) -> 
     Ok(result)
 }
 
-#[cfg(unix)]
+#[cfg(any(unix, target_os = "wasi"))]
 pub fn is_stdin_interactive() -> bool {
     unsafe { libc::isatty(libc::STDIN_FILENO) == 1 }
 }
@@ -177,7 +177,7 @@ pub fn is_stdin_interactive() -> bool {
     termion::is_tty(&io::stdin())
 }
 
-#[cfg(unix)]
+#[cfg(any(unix, target_os = "wasi"))]
 pub fn is_stdout_interactive() -> bool {
     unsafe { libc::isatty(libc::STDOUT_FILENO) == 1 }
 }
@@ -192,7 +192,7 @@ pub fn is_stdout_interactive() -> bool {
     termion::is_tty(&io::stdout())
 }
 
-#[cfg(unix)]
+#[cfg(any(unix, target_os = "wasi"))]
 pub fn is_stderr_interactive() -> bool {
     unsafe { libc::isatty(libc::STDERR_FILENO) == 1 }
 }
@@ -210,7 +210,7 @@ pub fn is_stderr_interactive() -> bool {
 #[cfg(not(unix))]
 #[allow(unused_variables)]
 pub fn display_permissions(metadata: &fs::Metadata) -> String {
-    String::from("---------")
+    (if metadata.permissions().readonly() { "r--" } else { "rw-" }).repeat(2)
 }
 
 #[cfg(unix)]

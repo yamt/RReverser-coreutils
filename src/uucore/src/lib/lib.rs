@@ -40,7 +40,7 @@ pub use crate::features::zero_copy;
 
 // * (platform-specific) feature-gated modules
 // ** non-windows
-#[cfg(all(not(windows), feature = "mode"))]
+#[cfg(all(not(windows), not(target_os = "wasi"), feature = "mode"))]
 pub use crate::features::mode;
 // ** unix-only
 #[cfg(all(unix, feature = "entries"))]
