@@ -1,44 +1,25 @@
 use std::fs::File;
-use std::io::{self, Write, Stdin, Stdout, Stderr};
-use std::process::Stdio;
+use std::io::{self, Write, Stdout, Stderr};
 
-use crate::features::zero_copy::{AsRawObject, FromRawObject};
+use crate::features::zero_copy::AsRawObject;
 
-pub enum RawObject {}
+pub struct RawObject;
 
 impl AsRawObject for File {
     fn as_raw_object(&self) -> RawObject {
-        unreachable!()
-    }
-}
-
-impl AsRawObject for Stdin {
-    fn as_raw_object(&self) -> RawObject {
-        unreachable!()
+        RawObject
     }
 }
 
 impl AsRawObject for Stdout {
     fn as_raw_object(&self) -> RawObject {
-        unreachable!()
+        RawObject
     }
 }
 
 impl AsRawObject for Stderr {
     fn as_raw_object(&self) -> RawObject {
-        unreachable!()
-    }
-}
-
-impl FromRawObject for File {
-    unsafe fn from_raw_object(obj: RawObject) -> Option<Self> {
-        match obj {}
-    }
-}
-
-impl FromRawObject for Stdio {
-    unsafe fn from_raw_object(obj: RawObject) -> Option<Self> {
-        match obj {}
+        RawObject
     }
 }
 
