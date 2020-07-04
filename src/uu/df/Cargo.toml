@@ -24,6 +24,9 @@ uucore_procs = { version=">=0.0.5", package="uucore_procs", path="../../uucore_p
 [target.'cfg(target_os = "windows")'.dependencies]
 winapi = { version = "0.3", features = ["errhandlingapi", "fileapi", "handleapi", "winerror"] }
 
+[target.'cfg(target_os = "wasi")'.dependencies]
+wasi = "0.10"
+
 [[bin]]
 name = "df"
 path = "src/main.rs"
