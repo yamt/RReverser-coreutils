@@ -900,7 +900,7 @@ fn copy_directory(root: &Path, target: &Target, options: &Options) -> CopyResult
         return Err(format!("omitting directory '{}'", root.display()).into());
     }
 
-    let root_path = Path::new(&root).canonicalize()?;
+    let root_path = canonicalize(root, CanonicalizeMode::Normal)?;
 
     let root_parent = if target.exists() {
         root_path.parent()
@@ -931,7 +931,7 @@ fn copy_directory(root: &Path, target: &Target, options: &Options) -> CopyResult
                 Err(e) => crash!(1, "failed to get current directory {}", e),
             }
         } else {
-            or_continue!(p.path().canonicalize())
+            or_continue!(canonicalize(p.path(), CanonicalizeMode::Normal))
         };
 
         let local_to_root_parent = match root_parent {
