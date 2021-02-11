@@ -77,6 +77,13 @@ pub fn main(stream: proc_macro::TokenStream) -> proc_macro::TokenStream {
         fn main() {
             use std::io::Write;
             uucore::panic::mute_sigpipe_panic(); // suppress extraneous error output for SIGPIPE failures/panics
+            if cfg!(target_os = "wasi") {
+                if let Some(pwd) = std::env::var_os("PWD") {
+                    std::env::set_current_dir(pwd).unwrap_or_else(|e| {
+                        println!("Could not set current working dir: {}", e);
+                    });
+                }
+            }
             let code = #f; // execute utility code
             std::io::stdout().flush().expect("could not flush stdout"); // (defensively) flush stdout for utility prior to exit; see <https://github.com/rust-lang/rust/issues/23818>
             std::process::exit(code);

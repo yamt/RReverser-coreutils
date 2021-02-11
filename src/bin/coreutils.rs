@@ -45,6 +45,14 @@ fn name(binary_path: &Path) -> &str {
 fn main() {
     uucore::panic::mute_sigpipe_panic();
 
+    if cfg!(target_os = "wasi") {
+        if let Some(pwd) = std::env::var_os("PWD") {
+            std::env::set_current_dir(pwd).unwrap_or_else(|e| {
+                println!("Could not set current working dir: {}", e);
+            });
+        }
+    }
+
     let utils = util_map();
     let mut args = uucore::args_os();
 
