@@ -12,6 +12,7 @@ use clap::{App, Arg};
 use std::env;
 use std::io;
 use std::path::{Path, PathBuf};
+use uucore::fs::{canonicalize, CanonicalizeMode};
 
 static ABOUT: &str = "Display the full filename of the current working directory.";
 static VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -19,7 +20,7 @@ static OPT_LOGICAL: &str = "logical";
 static OPT_PHYSICAL: &str = "physical";
 
 pub fn absolute_path(path: &Path) -> io::Result<PathBuf> {
-    let path_buf = path.canonicalize()?;
+    let path_buf = canonicalize(path, CanonicalizeMode::Normal)?;
 
     #[cfg(windows)]
     let path_buf = Path::new(
