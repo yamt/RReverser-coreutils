@@ -934,7 +934,7 @@ checksum = "3831453b3449ceb48b6d9c7ad7c96d5ea673e9b470a1dc578c2ce6521230884c"
 [[package]]
 name = "platform-info"
 version = "0.0.1"
-source = "git+https://github.com/RReverser/platform-info?branch=unknown-platform#c945e68ec2d679fbf031836180b8c85628343366"
+source = "git+https://github.com/RReverser/platform-info?branch=unknown-platform#65b4407ae8146ca8c2df5e9b92d9cbbda8888786"
 dependencies = [
  "libc",
  "winapi 0.3.9",
