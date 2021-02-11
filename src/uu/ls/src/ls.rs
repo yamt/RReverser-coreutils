@@ -219,19 +219,10 @@ fn sort_entries(entries: &mut Vec<PathBuf>, options: &getopts::Matches) {
     if options.opt_present("t") {
         let mut sorted = false;
 
-        #[cfg(any(unix, target_os = "redox", target_os = "wasi"))] {
+        #[cfg(any(unix, target_os = "redox"))] {
             if options.opt_present("c") {
                 entries.sort_by_key(|k| {
-                    Reverse(get_metadata(k, options).map(|md| {
-                        #[cfg(any(unix, target_os = "redox"))]
-                        {
-                            md.ctime()
-                        }
-                        #[cfg(target_os = "wasi")]
-                        {
-                            md.ctim()
-                        }
-                    }).unwrap_or(0))
+                    Reverse(get_metadata(k, options).map(|md| md.ctime()).unwrap_or(0))
                 });
                 sorted = true;
             }
