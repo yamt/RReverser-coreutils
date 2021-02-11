@@ -225,7 +225,7 @@ fn ctime(metadata: &Metadata) -> i64 {
 
 #[cfg(target_os = "wasi")]
 fn ctime(metadata: &Metadata) -> i64 {
-    metadata.ctim() as _
+    (metadata.ctim() / 1_000_000_000) as _
 }
 
 #[cfg(any(unix, target_os = "redox"))]
@@ -235,7 +235,7 @@ fn mtime(metadata: &Metadata) -> i64 {
 
 #[cfg(target_os = "wasi")]
 fn mtime(metadata: &Metadata) -> i64 {
-    metadata.mtim() as _
+    (metadata.mtim() / 1_000_000_000) as _
 }
 
 fn sort_entries(entries: &mut Vec<PathBuf>, options: &getopts::Matches) {
