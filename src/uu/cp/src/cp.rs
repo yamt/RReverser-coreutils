@@ -1,3 +1,4 @@
+#![cfg_attr(target_os = "wasi", feature(wasi_ext))]
 #![allow(clippy::missing_safety_doc)]
 
 // This file is part of the uutils coreutils package.
@@ -30,8 +31,6 @@ use filetime::FileTime;
 use quick_error::ResultExt;
 use std::collections::HashSet;
 use std::env;
-#[cfg(not(windows))]
-use std::ffi::CString;
 #[cfg(windows)]
 use std::ffi::OsStr;
 use std::fs;
@@ -39,9 +38,12 @@ use std::fs::File;
 use std::fs::OpenOptions;
 use std::io;
 use std::io::{stdin, stdout, Write};
-use std::mem;
+#[cfg(unix)]
+use std::os::unix::fs::MetadataExt;
 #[cfg(target_os = "linux")]
 use std::os::unix::io::IntoRawFd;
+#[cfg(target_os = "wasi")]
+use std::os::wasi::fs::MetadataExt;
 #[cfg(windows)]
 use std::os::windows::ffi::OsStrExt;
 use std::path::{Path, PathBuf, StripPrefixError};
@@ -713,59 +715,48 @@ fn preserve_hardlinks(
     #[cfg(not(target_os = "redox"))]
     {
         if !source.is_dir() {
+            let inode: u64;
+            let nlinks: u64;
+            #[cfg(any(unix, target_os = "wasi"))]
+            {
+                let stat = source.metadata()?;
+                inode = stat.ino();
+                nlinks = stat.nlink();
+            }
+            #[cfg(windows)]
             unsafe {
-                let inode: u64;
-                let nlinks: u64;
-                #[cfg(unix)]
-                {
-                    let src_path = CString::new(source.as_os_str().to_str().unwrap()).unwrap();
-                    let mut stat = mem::zeroed();
-                    if libc::lstat(src_path.as_ptr(), &mut stat) < 0 {
-                        return Err(format!(
-                            "cannot stat {:?}: {}",
-                            src_path,
-                            std::io::Error::last_os_error()
-                        )
-                        .into());
-                    }
-                    inode = stat.st_ino as u64;
-                    nlinks = stat.st_nlink as u64;
+                let src_path: Vec<u16> = OsStr::new(source).encode_wide().collect();
+                #[allow(deprecated)]
+                let stat = std::mem::uninitialized();
+                let handle = CreateFileW(
+                    src_path.as_ptr(),
+                    winapi::um::winnt::GENERIC_READ,
+                    winapi::um::winnt::FILE_SHARE_READ,
+                    std::ptr::null_mut(),
+                    0,
+                    0,
+                    std::ptr::null_mut(),
+                );
+                if GetFileInformationByHandle(handle, stat) != 0 {
+                    return Err(format!(
+                        "cannot get file information {:?}: {}",
+                        source,
+                        std::io::Error::last_os_error()
+                    )
+                    .into());
                 }
-                #[cfg(windows)]
-                {
-                    let src_path: Vec<u16> = OsStr::new(source).encode_wide().collect();
-                    #[allow(deprecated)]
-                    let stat = mem::uninitialized();
-                    let handle = CreateFileW(
-                        src_path.as_ptr(),
-                        winapi::um::winnt::GENERIC_READ,
-                        winapi::um::winnt::FILE_SHARE_READ,
-                        std::ptr::null_mut(),
-                        0,
-                        0,
-                        std::ptr::null_mut(),
-                    );
-                    if GetFileInformationByHandle(handle, stat) != 0 {
-                        return Err(format!(
-                            "cannot get file information {:?}: {}",
-                            source,
-                            std::io::Error::last_os_error()
-                        )
-                        .into());
-                    }
-                    inode = ((*stat).nFileIndexHigh as u64) << 32 | (*stat).nFileIndexLow as u64;
-                    nlinks = (*stat).nNumberOfLinks as u64;
-                }
+                inode = ((*stat).nFileIndexHigh as u64) << 32 | (*stat).nFileIndexLow as u64;
+                nlinks = (*stat).nNumberOfLinks as u64;
+            }
 
-                for hard_link in hard_links.iter() {
-                    if hard_link.1 == inode {
-                        std::fs::hard_link(hard_link.0.clone(), dest.clone()).unwrap();
-                        *found_hard_link = true;
-                    }
+            for hard_link in hard_links.iter() {
+                if hard_link.1 == inode {
+                    std::fs::hard_link(hard_link.0.clone(), dest.clone()).unwrap();
+                    *found_hard_link = true;
                 }
-                if !(*found_hard_link) && nlinks > 1 {
-                    hard_links.push((dest.to_str().unwrap().to_string(), inode));
-                }
+            }
+            if !(*found_hard_link) && nlinks > 1 {
+                hard_links.push((dest.to_str().unwrap().to_string(), inode));
             }
         }
     }
@@ -918,7 +909,7 @@ fn copy_directory(root: &Path, target: &Target, options: &Options) -> CopyResult
     }
 
     // This should be changed once Redox supports hardlinks
-    #[cfg(any(windows, target_os = "redox"))]
+    #[cfg(any(windows, target_os = "redox", target_os = "wasi"))]
     let mut hard_links: Vec<(String, u64)> = vec![];
 
     for path in WalkDir::new(root) {

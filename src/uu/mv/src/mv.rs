@@ -8,6 +8,8 @@
 
 // spell-checker:ignore (ToDO) sourcepath targetpath
 
+#![cfg_attr(target_os = "wasi", feature(wasi_ext))]
+
 #[macro_use]
 extern crate uucore;
 
@@ -16,7 +18,9 @@ use std::env;
 use std::fs;
 use std::io::{self, stdin};
 #[cfg(unix)]
-use std::os::unix;
+use std::os::unix::fs::symlink;
+#[cfg(target_os = "wasi")]
+use std::os::wasi::fs::symlink_path as symlink;
 #[cfg(windows)]
 use std::os::windows;
 use std::path::{Path, PathBuf};
@@ -466,9 +470,9 @@ fn rename_with_fallback(from: &PathBuf, to: &PathBuf) -> io::Result<()> {
 #[inline]
 fn rename_symlink_fallback(from: &PathBuf, to: &PathBuf) -> io::Result<()> {
     let path_symlink_points_to = fs::read_link(from)?;
-    #[cfg(unix)]
+    #[cfg(any(unix, target_os = "redox", target_os = "wasi"))]
     {
-        unix::fs::symlink(&path_symlink_points_to, &to).and_then(|_| fs::remove_file(&from))?;
+        symlink(&path_symlink_points_to, &to).and_then(|_| fs::remove_file(&from))?;
     }
     #[cfg(windows)]
     {
@@ -486,7 +490,7 @@ fn rename_symlink_fallback(from: &PathBuf, to: &PathBuf) -> io::Result<()> {
             ));
         }
     }
-    #[cfg(not(any(windows, unix)))]
+    #[cfg(not(any(windows, unix, target_os = "redox", target_os = "wasi")))]
     {
         return Err(io::Error::new(
             io::ErrorKind::Other,

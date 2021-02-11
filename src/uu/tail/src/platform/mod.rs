@@ -7,20 +7,10 @@
  * file that was distributed with this source code.
  */
 
-#[cfg(unix)]
-pub use self::unix::{supports_pid_checks, Pid, ProcessChecker};
+#[cfg_attr(unix, path = "unix.rs")]
+#[cfg_attr(windows, path = "windows.rs")]
+#[cfg_attr(target_os = "redox", path = "redox.rs")]
+#[cfg_attr(target_os = "wasi", path = "wasi.rs")]
+mod imp;
 
-#[cfg(windows)]
-pub use self::windows::{supports_pid_checks, Pid, ProcessChecker};
-
-#[cfg(target_os = "redox")]
-pub use self::redox::{supports_pid_checks, Pid, ProcessChecker};
-
-#[cfg(unix)]
-mod unix;
-
-#[cfg(windows)]
-mod windows;
-
-#[cfg(target_os = "redox")]
-mod redox;
+pub use imp::{supports_pid_checks, Pid, ProcessChecker};

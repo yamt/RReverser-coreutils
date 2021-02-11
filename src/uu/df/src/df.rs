@@ -101,6 +101,7 @@ static OPT_TYPE: &str = "type";
 static OPT_PRINT_TYPE: &str = "print-type";
 static OPT_EXCLUDE_TYPE: &str = "exclude-type";
 
+#[cfg(any(target_os = "linux", windows))]
 static MOUNT_OPT_BIND: &str = "bind";
 
 /// Store names of file systems as a selector.
@@ -298,6 +299,7 @@ impl Options {
 }
 
 impl MountInfo {
+    #[cfg(any(target_os = "linux", windows))]
     fn set_missing_fields(&mut self) {
         #[cfg(unix)]
         {
@@ -584,7 +586,7 @@ impl Filesystem {
         {
             Some(Filesystem {
                 mountinfo,
-                usage: FsUsage::default()
+                usage: FsUsage::default(),
             })
         }
     }
@@ -671,7 +673,8 @@ fn read_fs_list() -> Vec<MountInfo> {
                 let mut path = Vec::with_capacity(prestat.u.dir.pr_name_len);
                 if let Ok(()) = wasi::fd_prestat_dir_name(fd, path.as_mut_ptr(), path.capacity()) {
                     path.set_len(path.capacity());
-                    if let Some(mount) = MountInfo::new(String::from_utf8_lossy(&path).into_owned()) {
+                    if let Some(mount) = MountInfo::new(String::from_utf8_lossy(&path).into_owned())
+                    {
                         mounts.push(mount);
                     }
                 }

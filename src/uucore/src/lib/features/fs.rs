@@ -210,7 +210,12 @@ pub fn is_stderr_interactive() -> bool {
 #[cfg(not(unix))]
 #[allow(unused_variables)]
 pub fn display_permissions(metadata: &fs::Metadata) -> String {
-    (if metadata.permissions().readonly() { "r--" } else { "rw-" }).repeat(2)
+    (if metadata.permissions().readonly() {
+        "r--"
+    } else {
+        "rw-"
+    })
+    .repeat(2)
 }
 
 #[cfg(unix)]

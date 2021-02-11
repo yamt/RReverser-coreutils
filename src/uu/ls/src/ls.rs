@@ -7,6 +7,8 @@
 
 // spell-checker:ignore (ToDO) cpio svgz webm somegroup nlink rmvb xspf
 
+#![cfg_attr(target_os = "wasi", feature(wasi_ext))]
+
 #[cfg(unix)]
 #[macro_use]
 extern crate lazy_static;
@@ -23,6 +25,8 @@ use std::fs::{DirEntry, FileType, Metadata};
 use std::os::unix::fs::FileTypeExt;
 #[cfg(any(unix, target_os = "redox"))]
 use std::os::unix::fs::MetadataExt;
+#[cfg(target_os = "wasi")]
+use std::os::wasi::prelude::MetadataExt;
 #[cfg(windows)]
 use std::os::windows::fs::MetadataExt;
 use std::path::{Path, PathBuf};
@@ -214,15 +218,36 @@ fn list(options: getopts::Matches) -> i32 {
     }
 }
 
+#[cfg(any(unix, target_os = "redox"))]
+fn ctime(metadata: &Metadata) -> i64 {
+    metadata.ctime()
+}
+
+#[cfg(target_os = "wasi")]
+fn ctime(metadata: &Metadata) -> i64 {
+    metadata.ctim() as _
+}
+
+#[cfg(any(unix, target_os = "redox"))]
+fn mtime(metadata: &Metadata) -> i64 {
+    metadata.mtime()
+}
+
+#[cfg(target_os = "wasi")]
+fn mtime(metadata: &Metadata) -> i64 {
+    metadata.mtim() as _
+}
+
 fn sort_entries(entries: &mut Vec<PathBuf>, options: &getopts::Matches) {
     let mut reverse = options.opt_present("r");
     if options.opt_present("t") {
         let mut sorted = false;
 
-        #[cfg(any(unix, target_os = "redox"))] {
+        #[cfg(any(unix, target_os = "redox", target_os = "wasi"))]
+        {
             if options.opt_present("c") {
                 entries.sort_by_key(|k| {
-                    Reverse(get_metadata(k, options).map(|md| md.ctime()).unwrap_or(0))
+                    Reverse(get_metadata(k, options).map(|m| ctime(&m)).unwrap_or(0))
                 });
                 sorted = true;
             }
@@ -239,7 +264,7 @@ fn sort_entries(entries: &mut Vec<PathBuf>, options: &getopts::Matches) {
             });
         }
     } else if options.opt_present("S") {
-        entries.sort_by_key(|k| get_metadata(k, options).map(|md| md.size()).unwrap_or(0));
+        entries.sort_by_key(|k| get_metadata(k, options).map(|md| md.len()).unwrap_or(0));
         reverse = !reverse;
     } else if !options.opt_present("U") {
         entries.sort();
@@ -257,7 +282,7 @@ fn is_hidden(file_path: &DirEntry) -> std::io::Result<bool> {
     Ok(((attr & 0x2) > 0) || file_path.file_name().to_string_lossy().starts_with('.'))
 }
 
-#[cfg(unix)]
+#[cfg(not(windows))]
 fn is_hidden(file_path: &DirEntry) -> std::io::Result<bool> {
     Ok(file_path.file_name().to_string_lossy().starts_with('.'))
 }
@@ -462,18 +487,18 @@ fn display_group(metadata: &Metadata, _options: &getopts::Matches) -> String {
     "somegroup".to_string()
 }
 
-#[cfg(unix)]
+#[cfg(any(unix, target_os = "redox", target_os = "wasi"))]
 fn display_date(metadata: &Metadata, options: &getopts::Matches) -> String {
     let secs = if options.opt_present("c") {
-        metadata.ctime()
+        ctime(metadata)
     } else {
-        metadata.mtime()
+        mtime(metadata)
     };
     let time = time::at(Timespec::new(secs, 0));
     strftime("%F %R", &time).unwrap()
 }
 
-#[cfg(not(unix))]
+#[cfg(not(any(unix, target_os = "redox", target_os = "wasi")))]
 #[allow(unused_variables)]
 fn display_date(metadata: &Metadata, options: &getopts::Matches) -> String {
     if let Ok(mtime) = metadata.modified() {

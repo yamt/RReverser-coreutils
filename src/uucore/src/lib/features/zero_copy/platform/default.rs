@@ -1,5 +1,5 @@
 use std::fs::File;
-use std::io::{self, Write, Stdout, Stderr};
+use std::io::{self, Stderr, Stdout, Write};
 
 use crate::features::zero_copy::AsRawObject;
 
