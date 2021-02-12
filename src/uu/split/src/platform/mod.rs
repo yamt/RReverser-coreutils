@@ -1,11 +1,5 @@
-#[cfg(unix)]
-pub use self::unix::instantiate_current_writer;
+#[cfg_attr(unix, path = "unix.rs")]
+#[cfg_attr(not(unix), path = "generic.rs")]
+mod imp;
 
-#[cfg(not(unix))]
-pub use self::generic::instantiate_current_writer;
-
-#[cfg(unix)]
-mod unix;
-
-#[cfg(not(unix))]
-mod generic;
+pub use imp::instantiate_current_writer;

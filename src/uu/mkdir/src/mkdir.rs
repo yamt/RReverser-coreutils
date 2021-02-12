@@ -133,7 +133,7 @@ fn mkdir(path: &Path, recursive: bool, mode: u16, verbose: bool) -> i32 {
         println!("{}: created directory '{}'", executable!(), path.display());
     }
 
-    #[cfg(any(unix, target_os = "redox"))]
+    #[cfg(unix)]
     fn chmod(path: &Path, mode: u16) -> i32 {
         use std::fs::{set_permissions, Permissions};
         use std::os::unix::fs::PermissionsExt;
@@ -146,7 +146,7 @@ fn mkdir(path: &Path, recursive: bool, mode: u16, verbose: bool) -> i32 {
         }
         0
     }
-    #[cfg(not(any(unix, target_os = "redox")))]
+    #[cfg(not(unix))]
     #[allow(unused_variables)]
     fn chmod(path: &Path, mode: u16) -> i32 {
         // chmod on Windows only sets the readonly flag, which isn't even honored on directories

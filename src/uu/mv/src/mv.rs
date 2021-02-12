@@ -470,7 +470,7 @@ fn rename_with_fallback(from: &PathBuf, to: &PathBuf) -> io::Result<()> {
 #[inline]
 fn rename_symlink_fallback(from: &PathBuf, to: &PathBuf) -> io::Result<()> {
     let path_symlink_points_to = fs::read_link(from)?;
-    #[cfg(any(unix, target_os = "redox", target_os = "wasi"))]
+    #[cfg(any(unix, target_os = "wasi"))]
     {
         symlink(&path_symlink_points_to, &to).and_then(|_| fs::remove_file(&from))?;
     }

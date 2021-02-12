@@ -243,7 +243,7 @@ fn sort_entries(entries: &mut Vec<PathBuf>, options: &getopts::Matches) {
     if options.opt_present("t") {
         let mut sorted = false;
 
-        #[cfg(any(unix, target_os = "redox", target_os = "wasi"))]
+        #[cfg(any(unix, target_os = "wasi"))]
         {
             if options.opt_present("c") {
                 entries.sort_by_key(|k| {
@@ -487,7 +487,7 @@ fn display_group(metadata: &Metadata, _options: &getopts::Matches) -> String {
     "somegroup".to_string()
 }
 
-#[cfg(any(unix, target_os = "redox", target_os = "wasi"))]
+#[cfg(any(unix, target_os = "wasi"))]
 fn display_date(metadata: &Metadata, options: &getopts::Matches) -> String {
     let secs = if options.opt_present("c") {
         ctime(metadata)
@@ -498,7 +498,7 @@ fn display_date(metadata: &Metadata, options: &getopts::Matches) -> String {
     strftime("%F %R", &time).unwrap()
 }
 
-#[cfg(not(any(unix, target_os = "redox", target_os = "wasi")))]
+#[cfg(not(any(unix, target_os = "wasi")))]
 #[allow(unused_variables)]
 fn display_date(metadata: &Metadata, options: &getopts::Matches) -> String {
     if let Ok(mtime) = metadata.modified() {
